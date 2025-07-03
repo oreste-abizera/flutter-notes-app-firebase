@@ -1,6 +1,14 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_notes_app_firebase/firebase_options.dart';
 
-void main() {
+void main() async {
+  print("Initializing Firebase...");
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  print("Firebase initialized successfully.");
+  // Ensure that Firebase is initialized before running the app
+  print("Running the app...");
   runApp(const MyApp());
 }
 
