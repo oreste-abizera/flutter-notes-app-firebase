@@ -87,7 +87,8 @@ class NotesProvider with ChangeNotifier {
 1. **Firebase Project**: Created at [Firebase Console](https://console.firebase.google.com/)
 2. **Authentication**: Email/Password provider enabled
 3. **Firestore Database**: Created with proper security rules
-4. **Platform Configuration**:
+4. **Firestore Indexes**: ⚠️ **CRITICAL** - Required for real-time queries
+5. **Platform Configuration**:
    - `android/app/google-services.json` (Android)
    - `ios/Runner/GoogleService-Info.plist` (iOS)
    - `firebase_options.dart` (Generated via FlutterFire CLI)
@@ -149,7 +150,58 @@ dev_dependencies:
    flutterfire configure
    ```
 
-4. **Run the application**
+4. **Firestore Indexes Setup** ⚠️ **CRITICAL STEP**
+   
+   The app requires composite indexes for real-time queries. Follow these steps:
+   
+   **a) Initialize Firebase project locally**
+   ```bash
+   firebase login
+   firebase init firestore
+   ```
+   
+   **b) The project includes a pre-configured `firestore.indexes.json` file:**
+   ```json
+   {
+     "indexes": [
+       {
+         "collectionGroup": "notes",
+         "queryScope": "COLLECTION",
+         "fields": [
+           {
+             "fieldPath": "userId",
+             "order": "ASCENDING"
+           },
+           {
+             "fieldPath": "createdAt",
+             "order": "DESCENDING"
+           }
+         ]
+       }
+     ]
+   }
+   ```
+   
+   **c) Deploy the indexes to Firebase**
+   ```bash
+   firebase deploy --only firestore:indexes
+   ```
+   
+   **d) Wait for index creation** (Important!)
+   - Indexes can take 5-15 minutes to build
+   - Check index status at: [Firebase Console > Firestore > Indexes](https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes)
+   - The app will show "Stream error" messages until indexes are ready
+   - Real-time updates will work once indexes are built
+   
+   **e) Alternative: Create indexes via Firebase Console**
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Navigate to Firestore Database > Indexes
+   - Click "Create Index"
+   - Collection: `notes`
+   - Add fields: `userId` (Ascending), `createdAt` (Descending)
+   - Click "Create"
+
+5. **Run the application**
    ```bash
    flutter run
    ```
@@ -272,6 +324,77 @@ The implementation demonstrates:
 - **Firestore Rules**: Server-side security enforcement
 - **Input Validation**: Client-side data sanitization
 - **Error Information**: Sensitive details not exposed to users
+
+## 🚨 Troubleshooting
+
+### Real-time Updates Not Working
+
+**Symptoms:**
+- Notes don't appear immediately after adding
+- Updates/deletions don't reflect automatically
+- Console shows "Stream error" or "FAILED_PRECONDITION" messages
+
+**Solutions:**
+
+1. **Check Firestore Indexes Status**
+   ```bash
+   # Check if indexes are still building
+   firebase firestore:indexes
+   ```
+   Or visit: [Firebase Console > Firestore > Indexes](https://console.firebase.google.com/project/YOUR_PROJECT_ID/firestore/indexes)
+
+2. **Verify Index Configuration**
+   - Ensure `firestore.indexes.json` exists in project root
+   - Check `firebase.json` includes firestore configuration:
+   ```json
+   {
+     "firestore": {
+       "rules": "firestore.rules",
+       "indexes": "firestore.indexes.json"
+     }
+   }
+   ```
+
+3. **Redeploy Indexes if Needed**
+   ```bash
+   firebase deploy --only firestore:indexes
+   ```
+
+4. **Manual Index Creation (Alternative)**
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Firestore Database > Indexes > Create Index
+   - Collection: `notes`
+   - Fields: `userId` (Ascending), `createdAt` (Descending)
+
+5. **Check Debug Console**
+   ```bash
+   flutter run
+   # Look for messages like:
+   # "Starting notes stream for user: ..."
+   # "Received X notes from stream"
+   # "NotesProvider: Adding note..."
+   ```
+
+### Common Error Messages
+
+**"The query requires an index"**
+- **Cause**: Firestore indexes are still building or missing
+- **Solution**: Wait 5-15 minutes for index creation, or create manually via console
+
+**"Stream error: Failed to load notes"**
+- **Cause**: Network issues or authentication problems
+- **Solution**: Check internet connection and user authentication status
+
+**"Listen for Query failed: FAILED_PRECONDITION"**
+- **Cause**: Composite index not available yet
+- **Solution**: Wait for index building to complete
+
+### Performance Tips
+
+- **Index Building Time**: Can take 5-15 minutes for new projects
+- **Development vs Production**: Indexes built separately for each environment
+- **Large Datasets**: Index building time increases with existing data
+- **Real-time Updates**: Work only after indexes are fully built
 
 ## 🤝 Contributing
 

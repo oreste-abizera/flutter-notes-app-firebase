@@ -47,14 +47,28 @@ class NotesProvider with ChangeNotifier {
               notifyListeners();
             },
             onError: (error) {
-              _setError(error.toString());
+              // print('Notes stream error: $error');
+              _setError('Failed to load notes: $error');
               _setLoading(false);
+
+              // Fallback to manual fetch if stream fails
+              _fallbackToManualFetch(userId);
             },
           );
     } catch (e) {
-      _setError(e.toString());
+      // print('Error starting notes stream: $e');
+      _setError('Failed to start listening to notes: $e');
       _setLoading(false);
+
+      // Fallback to manual fetch if stream setup fails
+      _fallbackToManualFetch(userId);
     }
+  }
+
+  // Fallback method to fetch notes manually if stream fails
+  void _fallbackToManualFetch(String userId) {
+    // print('Falling back to manual fetch');
+    fetchNotes(userId);
   }
 
   // Fetch all notes for the current user (fallback method)
@@ -77,11 +91,19 @@ class NotesProvider with ChangeNotifier {
   Future<bool> addNote(String text, String userId) async {
     try {
       clearError();
+      // print('NotesProvider: Adding note "$text" for user $userId');
 
       await _notesRepository.addNote(text, userId);
-      // No need to manually refresh - stream will handle it
+      // print('NotesProvider: Note added successfully');
+
+      // If stream is not working, manually refresh
+      if (_notesSubscription == null || _notesSubscription!.isPaused) {
+        // print('NotesProvider: Stream not active, manually refreshing');
+        await fetchNotes(userId);
+      }
       return true;
     } catch (e) {
+      // print('NotesProvider: Error adding note: $e');
       _setError(e.toString());
       return false;
     }
@@ -91,11 +113,19 @@ class NotesProvider with ChangeNotifier {
   Future<bool> updateNote(String noteId, String text, String userId) async {
     try {
       clearError();
+      // print('NotesProvider: Updating note $noteId with text "$text"');
 
       await _notesRepository.updateNote(noteId, text);
-      // No need to manually refresh - stream will handle it
+      // print('NotesProvider: Note updated successfully');
+
+      // If stream is not working, manually refresh
+      if (_notesSubscription == null || _notesSubscription!.isPaused) {
+        // print('NotesProvider: Stream not active, manually refreshing');
+        await fetchNotes(userId);
+      }
       return true;
     } catch (e) {
+      // print('NotesProvider: Error updating note: $e');
       _setError(e.toString());
       return false;
     }
@@ -105,11 +135,19 @@ class NotesProvider with ChangeNotifier {
   Future<bool> deleteNote(String noteId, String userId) async {
     try {
       clearError();
+      // print('NotesProvider: Deleting note $noteId');
 
       await _notesRepository.deleteNote(noteId);
-      // No need to manually refresh - stream will handle it
+      // print('NotesProvider: Note deleted successfully');
+
+      // If stream is not working, manually refresh
+      if (_notesSubscription == null || _notesSubscription!.isPaused) {
+        // print('NotesProvider: Stream not active, manually refreshing');
+        await fetchNotes(userId);
+      }
       return true;
     } catch (e) {
+      // print('NotesProvider: Error deleting note: $e');
       _setError(e.toString());
       return false;
     }
