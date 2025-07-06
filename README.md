@@ -19,6 +19,8 @@ A complete Flutter notes application with Firebase Authentication and Cloud Fire
 
 This project follows clean architecture principles with complete separation of concerns:
 
+![image](https://github.com/user-attachments/assets/6a83ae4a-bf1e-4322-84ac-42dd6e728f3f)
+
 ```
 lib/
 ├── models/
@@ -232,6 +234,7 @@ class Note {
 flutter analyze
 # Result: No issues found! (0 issues)
 ```
+![image](https://github.com/user-attachments/assets/ec0fb488-4908-44a1-8956-4c0bc7515997)
 
 ### Quality Metrics
 - **Architecture**: Clean separation of concerns
